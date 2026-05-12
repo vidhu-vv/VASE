@@ -1,0 +1,6 @@
+.venv/
+deps/
+data/
+build/
+tools/
+src/hrtf_data.h
