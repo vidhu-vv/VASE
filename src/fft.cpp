@@ -69,6 +69,7 @@ void fft_precompute(int N) {
 }
 
 void fft(Complex *data, int N) {
+  assert(N == table_N && "fft_precompute not called with correct size");
   for (int i = 0; i < N; ++i) {
     int j = bitrev_table[i];
     if (j > i) {

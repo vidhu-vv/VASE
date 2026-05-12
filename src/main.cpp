@@ -4,6 +4,7 @@
 
 #include "fft_convolver.h"
 #include "hrtf_decoder.h"
+#include "sh_encoder.h"
 #include <stdio.h>
 void data_callback(ma_device *pDevice, void *pOutput, const void *pInput,
                    ma_uint32 frameCount) {
@@ -18,58 +19,50 @@ void data_callback(ma_device *pDevice, void *pOutput, const void *pInput,
 
 int main(int argc, char **argv) {
   fft_precompute(1024);
+  SHEncoder encoder;
 
-  // dirac delta IR — output should equal input
-  float ir[256] = {};
-  ir[0] = 1.0f;
-
-  Convolver conv(ir, 256, 512);
-
-  // make a test input block with some recognisable values
-  float input[512] = {};
-  float output[512] = {};
-  input[0] = 1.0f;
-  input[1] = 0.5f;
-  input[2] = -0.5f;
-  input[100] = 0.75f;
-
-  conv.process(input, output);
-
-  // output should match input exactly
-  printf("Dirac test:\n");
-  for (int i = 0; i < 10; i++) {
-    printf("  in=%.4f  out=%.4f  diff=%.6f\n", input[i], output[i],
-           fabsf(input[i] - output[i]));
-  }
-  printf("  in[100]=%.4f  out[100]=%.4f\n", input[100], output[100]);
-  fft_precompute(1024);
-  Decoder h_decoder(512);
-
-  // make some dry audio
   float dry[512] = {};
   for (int i = 0; i < 512; i++)
-    dry[i] = sinf(2.0f * M_PI * 440.0f * i / 48000.0f); // 440hz tone
+    dry[i] = sinf(2.0f * M_PI * 440.0f * i / 48000.0f);
 
-  // manually encode at azimuth=0, elevation=0
-  // W=0.707, X=cos(0)cos(0)=1, Y=cos(0)sin(0)=0, Z=sin(0)=0
   float W[512], X[512], Y[512], Z[512];
-  for (int i = 0; i < 512; i++) {
-    W[i] = dry[i] * 0.7071f;
-    X[i] = dry[i] * 0.0f;
-    Y[i] = dry[i] * 1.0f;
-    Z[i] = dry[i] * 0.0f;
+  const float *foa[4] = {W, X, Y, Z};
+
+  // test 1 — front centre
+  {
+    Decoder decoder(512);
+    float out_L[512] = {}, out_R[512] = {};
+    encoder.set_direction(0.0f, 0.0f);
+    encoder.process(dry, W, X, Y, Z, 512);
+    decoder.process(foa, out_L, out_R);
+    printf("front centre (L should ≈ R):\n");
+    for (int i = 100; i < 106; i++)
+      printf("  L=%.4f  R=%.4f  diff=%.6f\n", out_L[i], out_R[i],
+             fabsf(out_L[i] - out_R[i]));
   }
 
-  const float *foa[4] = {W, X, Y, Z};
-  float out_L[512] = {};
-  float out_R[512] = {};
+  // test 2 — hard right
+  {
+    Decoder decoder(512);
+    float out_L[512] = {}, out_R[512] = {};
+    encoder.set_direction(90.0f, 0.0f);
+    encoder.process(dry, W, X, Y, Z, 512);
+    decoder.process(foa, out_L, out_R);
+    printf("hard right (R should be louder):\n");
+    for (int i = 100; i < 106; i++)
+      printf("  L=%.4f  R=%.4f\n", out_L[i], out_R[i]);
+  }
 
-  h_decoder.process(foa, out_L, out_R);
-
-  // at 0° azimuth L and R should be nearly identical
-  printf("90 right test (R should be louder than L):\n");
-  for (int i = 100; i < 108; i++) {
-    printf("  L=%.4f  R=%.4f\n", out_L[i], out_R[i]);
+  // test 3 — hard left
+  {
+    Decoder decoder(512);
+    float out_L[512] = {}, out_R[512] = {};
+    encoder.set_direction(270.0f, 0.0f);
+    encoder.process(dry, W, X, Y, Z, 512);
+    decoder.process(foa, out_L, out_R);
+    printf("hard left (L should be louder):\n");
+    for (int i = 100; i < 106; i++)
+      printf("  L=%.4f  R=%.4f\n", out_L[i], out_R[i]);
   }
   ma_result result;
   ma_decoder decoder;

@@ -8,9 +8,9 @@ void SHEncoder::set_direction(float az_deg, float el_deg) {
   float el = el_deg * M_PI / 180.0f;
 
   m_W = 0.7071f;
-  m_W = cosf(el) * cosf(az);
-  m_W = cosf(el) * sinf(az);
-  m_W = sinf(el);
+  m_X = cosf(el) * cosf(az);
+  m_Y = cosf(el) * sinf(az);
+  m_Z = sinf(el);
 }
 
 void SHEncoder::process(const float *input, float *out_W, float *out_X,
