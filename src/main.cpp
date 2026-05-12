@@ -1,6 +1,7 @@
 #define MINIAUDIO_IMPLEMENTATION
 #include "../deps/miniaudio.h"
 #include "fft.h"
+#include "rotation.h"
 
 #include "fft_convolver.h"
 #include "hrtf_decoder.h"
@@ -18,6 +19,25 @@ void data_callback(ma_device *pDevice, void *pOutput, const void *pInput,
 }
 
 int main(int argc, char **argv) {
+  Rotation rotation(0.5f, 48000.0f, 512);
+
+  printf("LFO azimuth values:\n");
+  for (int i = 0; i < 10; i++) {
+    float az = rotation.next_az();
+    printf("  block %d: %.2f°\n", i, az);
+  }
+
+  // run until wrap
+  printf("running until wrap...\n");
+  float az = 0.0f;
+  int block = 0;
+  while (az < 358.0f) {
+    az = rotation.next_az();
+    block++;
+  }
+  printf("  reached 350° at block %d\n", block);
+  az = rotation.next_az();
+  printf("  next value after wrap: %.2f°\n", az);
   fft_precompute(1024);
   SHEncoder encoder;
 
