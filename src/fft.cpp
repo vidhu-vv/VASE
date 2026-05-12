@@ -18,8 +18,8 @@ Complex Complex::operator*(const Complex &other) const {
 }
 
 void Complex::operator*=(const Complex &other) {
-  double next_r = r * other.r - i * other.i;
-  double next_i = r * other.i + i * other.r;
+  float next_r = r * other.r - i * other.i;
+  float next_i = r * other.i + i * other.r;
 
   r = next_r;
   i = next_i;
@@ -58,7 +58,7 @@ void fft_precompute(int N) {
   table_m = m;
 
   for (int k = 0; k < N; k++) {
-    double angle = -2.0 * M_PI * k / N;
+    float angle = -2.0 * M_PI * k / N;
     twiddle_table[k] = {cosf(angle), sinf(angle)};
   }
 
@@ -119,5 +119,5 @@ void ifft(Complex *data, int N) {
   }
 
   for (int i = 0; i < N; ++i)
-    data[i] /= (double)N;
+    data[i] /= (float)N;
 }

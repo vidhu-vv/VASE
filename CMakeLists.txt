@@ -43,6 +43,8 @@ elseif(APPLE)
         "-framework CoreAudio"
         "-framework CoreFoundation"
         "-framework AudioToolbox"
+        -O3 
+        -ffast-math
         m
     )
 elseif(WIN32)
